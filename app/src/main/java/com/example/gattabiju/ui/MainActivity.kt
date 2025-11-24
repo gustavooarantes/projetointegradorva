@@ -1,4 +1,4 @@
-package com.example.gattabiju
+package com.example.gattabiju.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
