@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ClientDao {
     @Insert
-    suspend fun insert(client: Client)
+    suspend fun inserir(client: Client)
 
     @Query("SELECT * FROM clientes ORDER BY nome_completo ASC")
     fun listarTodos(): Flow<List<Client>>
