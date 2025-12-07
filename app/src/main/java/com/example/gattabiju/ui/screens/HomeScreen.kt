@@ -1,54 +1,95 @@
 package com.example.gattabiju.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.gattabiju.data.Client
+import com.example.gattabiju.data.Coupon
 import com.example.gattabiju.viewmodel.ClientViewModel
+import com.example.gattabiju.viewmodel.CouponViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: ClientViewModel) {
-    // Coleta a lista do banco de dados em tempo real
-    val clientList by viewModel.allClients.collectAsState()
+fun HomeScreen(
+    clientViewModel: ClientViewModel,
+    cupomViewModel: CouponViewModel
+) {
+    var selectedTab by remember { mutableStateOf(0) }
 
-    // Estado para controlar se o diálogo de adicionar está visível
-    var showDialog by remember { mutableStateOf(false) }
-
-    // Scaffold é o esqueleto da tela (Barra superior, Conteúdo, Botão Flutuante)
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("GattaBiju Clientes") })
+            TopAppBar(
+                title = { 
+                    Text(if (selectedTab == 0) "Clientes GattaBiju" else "Cupons Ativos") 
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Adicionar")
-            }
-        }
-    ) { padding ->
-        // LISTA DE CLIENTES
-        LazyColumn(
-            contentPadding = padding,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(clientList) { client ->
-                ClientItem(
-                    client = client,
-                    onDelete = { viewModel.deleteClient(client) }
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    label = { Text("Clientes") },
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Star, contentDescription = null) },
+                    label = { Text("Cupons") },
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 }
                 )
             }
         }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            if (selectedTab == 0) {
+                ClientScreenContent(clientViewModel)
+            } else {
+                CupomScreenContent(cupomViewModel)
+            }
+        }
+    }
+}
 
-        // DIÁLOGO DE CADASTRO (Aparece quando clica no botão +)
+// ==========================================
+// TELA 1: CONTEÚDO DE CLIENTES
+// ==========================================
+@Composable
+fun ClientScreenContent(viewModel: ClientViewModel) {
+    val clientList by viewModel.allClients.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Adicionar Cliente")
+            }
+        }
+    ) { padding ->
+        LazyColumn(contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+            items(clientList) { client ->
+                ClientItem(client = client, onDelete = { viewModel.deleteClient(client) })
+            }
+        }
+
         if (showDialog) {
             AddClientDialog(
                 onDismiss = { showDialog = false },
@@ -61,23 +102,68 @@ fun HomeScreen(viewModel: ClientViewModel) {
     }
 }
 
-// COMPONENTE: Um item da lista (Card)
+// ==========================================
+// TELA 2: CONTEÚDO DE CUPONS
+// ==========================================
+@Composable
+fun CouponScreenContent(viewModel: CouponViewModel) {
+    val cuponsList by viewModel.cuponsAtivos.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showDialog = true },
+                icon = { Icon(Icons.Default.Add, "Criar") },
+                text = { Text("Novo Cupom") },
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            )
+        }
+    ) { padding ->
+        LazyColumn(contentPadding = padding, modifier = Modifier.fillMaxSize()) {
+            if (cuponsList.isEmpty()) {
+                item {
+                    Text(
+                        text = "Nenhum cupom ativo hoje.",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+            items(cuponsList) { coupon ->
+                CupomItem(coupon = coupon, onDelete = { viewModel.deletarCupom(coupon) })
+            }
+        }
+
+        if (showDialog) {
+            AddCupomDialog(
+                onDismiss = { showDialog = false },
+                onConfirm = { codigo, desc, porc ->
+                    viewModel.criarCupomManual(codigo, desc, porc.toIntOrNull() ?: 10)
+                    showDialog = false
+                }
+            )
+        }
+    }
+}
+
+// ==========================================
+// COMPONENTES VISUAIS (Itens e Diálogos)
+// ==========================================
+
 @Composable
 fun ClientItem(client: Client, onDelete: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = client.nomeCompleto, style = MaterialTheme.typography.titleMedium)
-                Text(text = client.telefone, style = MaterialTheme.typography.bodyMedium)
-                Text(text = client.email, style = MaterialTheme.typography.bodySmall)
+                Text(client.nomeCompleto, style = MaterialTheme.typography.titleMedium)
+                Text("Tel: ${client.telefone}", style = MaterialTheme.typography.bodyMedium)
+                if (client.dataNascimento.isNotEmpty()) {
+                    Text("Niver: ${client.dataNascimento}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Deletar", tint = MaterialTheme.colorScheme.error)
@@ -86,12 +172,31 @@ fun ClientItem(client: Client, onDelete: () -> Unit) {
     }
 }
 
-// COMPONENTE: O formulário flutuante
+@Composable
+fun CupomItem(coupon: Coupon, onDelete: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(coupon.codigo, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(coupon.descricao, style = MaterialTheme.typography.bodyMedium)
+                Text("${coupon.porcentagem}% OFF", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = "Usar/Deletar")
+            }
+        }
+    }
+}
+
+@Composable
 fun AddClientDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, String) -> Unit) {
     var nome by remember { mutableStateOf("") }
     var telefone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var dataNascimento by remember { mutableStateOf("") } // Novo campo
+    var niver by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -101,21 +206,31 @@ fun AddClientDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, S
                 OutlinedTextField(value = nome, onValueChange = { nome = it }, label = { Text("Nome") })
                 OutlinedTextField(value = telefone, onValueChange = { telefone = it }, label = { Text("Telefone") })
                 OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
-                OutlinedTextField(
-                    value = dataNascimento, 
-                    onValueChange = { dataNascimento = it }, 
-                    label = { Text("Aniversário (Dia/Mês)") },
-                    placeholder = { Text("Ex: 15/05") }
-                )
+                OutlinedTextField(value = niver, onValueChange = { niver = it }, label = { Text("Niver (dd/MM)") }, placeholder = { Text("Ex: 15/05") })
             }
         },
-        confirmButton = {
-            Button(onClick = { onConfirm(nome, telefone, email, dataNascimento) }) {
-                Text("Salvar")
+        confirmButton = { Button(onClick = { onConfirm(nome, telefone, email, niver) }) { Text("Salvar") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@Composable
+fun AddCouponDialog(onDismiss: () -> Unit, onConfirm: (String, String, String) -> Unit) {
+    var codigo by remember { mutableStateOf("") }
+    var descricao by remember { mutableStateOf("") }
+    var porcentagem by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Criar Cupom Manual") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = codigo, onValueChange = { codigo = it.uppercase() }, label = { Text("Código (Ex: VERAO10)") })
+                OutlinedTextField(value = descricao, onValueChange = { descricao = it }, label = { Text("Descrição") })
+                OutlinedTextField(value = porcentagem, onValueChange = { porcentagem = it }, label = { Text("Desconto (%)") })
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        }
+        confirmButton = { Button(onClick = { onConfirm(codigo, descricao, porcentagem) }) { Text("Criar") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
 }
