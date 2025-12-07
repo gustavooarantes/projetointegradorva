@@ -52,8 +52,8 @@ fun HomeScreen(viewModel: ClientViewModel) {
         if (showDialog) {
             AddClientDialog(
                 onDismiss = { showDialog = false },
-                onConfirm = { nome, tel, email ->
-                    viewModel.saveClient(Client(nomeCompleto = nome, telefone = tel, email = email))
+                onConfirm = { nome, tel, email, aniversario ->
+                    viewModel.saveClient(Client(nomeCompleto = nome, telefone = tel, email = email, dataNascimento = aniversario))
                     showDialog = false
                 }
             )
@@ -87,11 +87,11 @@ fun ClientItem(client: Client, onDelete: () -> Unit) {
 }
 
 // COMPONENTE: O formulário flutuante
-@Composable
-fun AddClientDialog(onDismiss: () -> Unit, onConfirm: (String, String, String) -> Unit) {
+fun AddClientDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, String) -> Unit) {
     var nome by remember { mutableStateOf("") }
     var telefone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var dataNascimento by remember { mutableStateOf("") } // Novo campo
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -101,10 +101,16 @@ fun AddClientDialog(onDismiss: () -> Unit, onConfirm: (String, String, String) -
                 OutlinedTextField(value = nome, onValueChange = { nome = it }, label = { Text("Nome") })
                 OutlinedTextField(value = telefone, onValueChange = { telefone = it }, label = { Text("Telefone") })
                 OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
+                OutlinedTextField(
+                    value = dataNascimento, 
+                    onValueChange = { dataNascimento = it }, 
+                    label = { Text("Aniversário (Dia/Mês)") },
+                    placeholder = { Text("Ex: 15/05") }
+                )
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(nome, telefone, email) }) {
+            Button(onClick = { onConfirm(nome, telefone, email, dataNascimento) }) {
                 Text("Salvar")
             }
         },
