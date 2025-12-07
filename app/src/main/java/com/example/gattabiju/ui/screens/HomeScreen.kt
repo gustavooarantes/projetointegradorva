@@ -1,6 +1,5 @@
 package com.example.gattabiju.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,10 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.gattabiju.data.Client
 import com.example.gattabiju.data.Coupon
 import com.example.gattabiju.viewmodel.ClientViewModel
@@ -26,7 +23,7 @@ import com.example.gattabiju.viewmodel.CouponViewModel
 @Composable
 fun HomeScreen(
     clientViewModel: ClientViewModel,
-    cupomViewModel: CouponViewModel
+    couponViewModel: CouponViewModel
 ) {
     var selectedTab by remember { mutableStateOf(0) }
 
@@ -63,7 +60,7 @@ fun HomeScreen(
             if (selectedTab == 0) {
                 ClientScreenContent(clientViewModel)
             } else {
-                CupomScreenContent(cupomViewModel)
+                CouponScreenContent(couponViewModel)
             }
         }
     }
@@ -107,7 +104,7 @@ fun ClientScreenContent(viewModel: ClientViewModel) {
 // ==========================================
 @Composable
 fun CouponScreenContent(viewModel: CouponViewModel) {
-    val cuponsList by viewModel.cuponsAtivos.collectAsState()
+    val cuponsList by viewModel.activeCoupons.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -136,7 +133,7 @@ fun CouponScreenContent(viewModel: CouponViewModel) {
         }
 
         if (showDialog) {
-            AddCupomDialog(
+            AddCouponDialog(
                 onDismiss = { showDialog = false },
                 onConfirm = { codigo, desc, porc ->
                     viewModel.criarCupomManual(codigo, desc, porc.toIntOrNull() ?: 10)

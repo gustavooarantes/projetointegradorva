@@ -85,13 +85,13 @@ class CouponViewModel(
         porcentagem: Int,
     ) {
         val novoCupom =
-            Cupom(
+            Coupon(
                 codigo = codigo,
                 descricao = descricao,
                 porcentagem = porcentagem,
                 ativo = true,
             )
-        cupomDao.inserir(novoCupom)
+        couponDao.inserir(novoCupom)
     }
 
     fun criarCupomManual(
@@ -100,8 +100,8 @@ class CouponViewModel(
         porcentagem: Int,
     ) {
         viewModelScope.launch {
-            cupomDao.inserir(
-                Cupom(
+            couponDao.inserir(
+                Coupon(
                     codigo = codigo.uppercase(),
                     descricao = descricao,
                     porcentagem = porcentagem,
@@ -110,21 +110,21 @@ class CouponViewModel(
         }
     }
 
-    fun deletarCupom(cupom: Cupom) {
+    fun deletarCupom(cupom: Coupon) {
         viewModelScope.launch {
-            cupomDao.deletar(cupom)
+            couponDao.deletar(cupom)
         }
     }
 }
 
-class CupomViewModelFactory(
+class CouponViewModelFactory(
     private val couponDao: CouponDao,
     private val clientDao: ClientDao,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CupomViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(CouponViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CupomViewModel(couponDao, clientDao) as T
+            return CouponViewModel(couponDao, clientDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
