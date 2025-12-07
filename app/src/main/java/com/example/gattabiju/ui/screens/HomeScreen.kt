@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -72,30 +73,46 @@ fun HomeScreen(
 @Composable
 fun ClientScreenContent(viewModel: ClientViewModel) {
     val clientList by viewModel.allClients.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf<Client?>(null) }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(onClick = { showAddDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Cliente")
             }
         }
     ) { padding ->
         LazyColumn(contentPadding = padding, modifier = Modifier.fillMaxSize()) {
             items(clientList) { client ->
-                ClientItem(client = client, onDelete = { viewModel.deleteClient(client) })
+                ClientItem(client = client, onDelete = { viewModel.deleteClient(client) }, onUpdate = {
+                    showUpdateDialog = client
+                })
             }
         }
 
-        if (showDialog) {
+        if (showAddDialog) {
             AddClientDialog(
-                onDismiss = { showDialog = false },
+                onDismiss = { showAddDialog = false },
                 onConfirm = { nome, tel, email, aniversario ->
                     viewModel.saveClient(Client(nomeCompleto = nome, telefone = tel, email = email, dataNascimento = aniversario))
-                    showDialog = false
+                    showAddDialog = false
                 }
             )
         }
+
+        showUpdateDialog?.let { client ->
+            UpdateClientDialog(
+                client = client,
+                onDismiss = { showUpdateDialog = null },
+                onConfirm = { nome, tel, email, aniversario ->
+                    viewModel.saveClient(client.copy(nomeCompleto = nome, telefone = tel, email = email, dataNascimento = aniversario))
+                    showUpdateDialog = null
+                }
+            )
+        }
+
+
     }
 }
 
@@ -149,7 +166,9 @@ fun CouponScreenContent(viewModel: CouponViewModel) {
 // ==========================================
 
 @Composable
-fun ClientItem(client: Client, onDelete: () -> Unit) {
+fun ClientItem(client: Client, onDelete: () -> Unit, onUpdate: (Client) -> Unit =  {
+
+}) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         elevation = CardDefaults.cardElevation(2.dp)
@@ -164,6 +183,9 @@ fun ClientItem(client: Client, onDelete: () -> Unit) {
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Deletar", tint = MaterialTheme.colorScheme.error)
+            }
+            IconButton(onClick = { onUpdate(client) }) {
+                Icon(Icons.Default.Edit, contentDescription = "Atualizar")
             }
         }
     }
@@ -198,6 +220,29 @@ fun AddClientDialog(onDismiss: () -> Unit, onConfirm: (String, String, String, S
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Novo Cliente") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = nome, onValueChange = { nome = it }, label = { Text("Nome") })
+                OutlinedTextField(value = telefone, onValueChange = { telefone = it }, label = { Text("Telefone") })
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
+                OutlinedTextField(value = niver, onValueChange = { niver = it }, label = { Text("Niver (dd/MM)") }, placeholder = { Text("Ex: 15/05") })
+            }
+        },
+        confirmButton = { Button(onClick = { onConfirm(nome, telefone, email, niver) }) { Text("Salvar") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
+}
+
+@Composable
+fun UpdateClientDialog(client: Client,onDismiss: () -> Unit, onConfirm: (String, String, String, String) -> Unit) {
+    var nome by remember { mutableStateOf(client.nomeCompleto) }
+    var telefone by remember { mutableStateOf(client.telefone) }
+    var email by remember { mutableStateOf(client.email) }
+    var niver by remember { mutableStateOf(client.dataNascimento) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Cliente") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = nome, onValueChange = { nome = it }, label = { Text("Nome") })
