@@ -59,7 +59,7 @@ fun HomeScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             if (selectedTab == 0) {
-                ClientScreenContent(clientViewModel)
+                ClientScreenContent(clientViewModel, couponViewModel)
             } else {
                 CouponScreenContent(couponViewModel)
             }
@@ -71,7 +71,7 @@ fun HomeScreen(
 // TELA 1: CONTEÚDO DE CLIENTES
 // ==========================================
 @Composable
-fun ClientScreenContent(viewModel: ClientViewModel) {
+fun ClientScreenContent(viewModel: ClientViewModel, couponViewModel: CouponViewModel) {
     val clientList by viewModel.allClients.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf<Client?>(null) }
@@ -95,7 +95,10 @@ fun ClientScreenContent(viewModel: ClientViewModel) {
             AddClientDialog(
                 onDismiss = { showAddDialog = false },
                 onConfirm = { nome, tel, email, aniversario ->
-                    viewModel.saveClient(Client(nomeCompleto = nome, telefone = tel, email = email, dataNascimento = aniversario))
+                    val novoCliente = Client(nomeCompleto = nome, telefone = tel, email = email, dataNascimento = aniversario)
+                    viewModel.saveClient(novoCliente)
+                    // chama a verificação para criar cupom caso hoje seja o aniversário do novo cliente
+                    couponViewModel.verificarAniversarioPara(novoCliente)
                     showAddDialog = false
                 }
             )
@@ -109,10 +112,8 @@ fun ClientScreenContent(viewModel: ClientViewModel) {
                     viewModel.saveClient(client.copy(nomeCompleto = nome, telefone = tel, email = email, dataNascimento = aniversario))
                     showUpdateDialog = null
                 }
-            )
-        }
-
-
+             )
+         }
     }
 }
 
