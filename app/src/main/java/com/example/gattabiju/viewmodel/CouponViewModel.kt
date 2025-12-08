@@ -3,6 +3,7 @@ package com.example.gattabiju.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.gattabiju.data.Client
 import com.example.gattabiju.data.ClientDao
 import com.example.gattabiju.data.Coupon
 import com.example.gattabiju.data.CouponDao
@@ -79,6 +80,27 @@ class CouponViewModel(
         }
     }
 
+    // -------------------------
+    // Novo método público
+    // -------------------------
+    // Verifica se o cliente passado tem aniversário hoje e cria o cupom se for o caso.
+    // Pode ser chamado pela UI logo após salvar um cliente recém-criado.
+    fun verificarAniversarioPara(cliente: Client) {
+        val hoje = DateHelper.hoje()
+
+        viewModelScope.launch {
+            if (cliente.dataNascimento == hoje) {
+                val codigoNiver = "NIVER-${cliente.nomeCompleto.take(3).uppercase()}"
+
+                criarCupomAutomatico(
+                    codigo = codigoNiver,
+                    descricao = "Parabéns ${cliente.nomeCompleto}!",
+                    porcentagem = 20,
+                )
+            }
+        }
+    }
+
     private suspend fun criarCupomAutomatico(
         codigo: String,
         descricao: String,
@@ -92,6 +114,7 @@ class CouponViewModel(
                 ativo = true,
             )
         couponDao.inserir(novoCupom)
+        //criarCupomManual(novoCupom.codigo, novoCupom.descricao, novoCupom.porcentagem)
     }
 
     fun criarCupomManual(
